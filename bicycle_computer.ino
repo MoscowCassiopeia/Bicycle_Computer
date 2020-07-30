@@ -143,14 +143,17 @@ void stop_track() {
 
   // останавливает трек, обнуляя нужные переменные
 
-  put_odometer();
-  distance_km = 0;
-  counter_tick = 0;
+  clear_distance();
+  
+  //put_odometer();
+  //distance_km = 0;
+  //counter_tick = 0;
   counter_tick_track = 0;
-  last_distance = 0;
+  track_distance_km = 0;
+  //last_distance = 0;
   on_track = false;
+  
   draw_screen();
-
 }
 
 void clear_distance() {
@@ -160,6 +163,7 @@ void clear_distance() {
   put_odometer();
   distance_km = 0;
   counter_tick = 0;
+  last_distance = 0;
   
 }
 
