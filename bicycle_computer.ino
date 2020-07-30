@@ -1,0 +1,340 @@
+#include <SPI.h>
+#include <Wire.h>
+#include <Adafruit_GFX.h>
+#include <Adafruit_SSD1306.h>
+#include <EEPROM.h>
+#include "GyverButton.h"
+#include "GyverTimer.h"
+
+#define SCREEN_WIDTH 128 // OLED display width, in pixels
+#define SCREEN_HEIGHT 32 // OLED display height, in pixels
+
+// Declaration for an SSD1306 display connected to I2C (SDA, SCL pins)
+#define OLED_RESET     4 // Reset pin # (or -1 if sharing Arduino reset pin)
+Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET);
+
+
+
+#define BICYCLE_PIN 8
+#define BTN_PIN 5
+
+#define ALL_INFO 0
+#define DISTANCE 1
+#define RPM 2
+#define SPEED 3
+#define ODOMETER 4
+#define TRACK 5
+
+
+#define TEN_METERS 7 // оборотов колеса на 10 метров
+//#define METERS_KM 1000 // метров в километре
+#define MIN_IN_HOUR 60
+#define METER_IN_KM 1000
+#define MILLIS_MIN 60000
+#define TICKS_IN_KM 700 // количество оборотов колеса в километре
+
+#define TIME_OUT_TRACK 4000 // таймаут установки дистанции трека
+#define IDLE_TIMEOUT 1500 // таймаут простоя колеса
+
+
+
+bool flag_tick = true;
+bool tick_on;
+bool on_track = false;
+unsigned int rpm = 0;
+float speed = 0;
+float distance_km = 0;
+float track_distance_km = 0;
+unsigned int last_distance = 0;
+unsigned int counter_tick = 0;
+unsigned int counter_tick_track = 0;
+unsigned long last_tick_time = 0;
+byte show_info = 0;
+
+GButton butt_1(BTN_PIN);
+GTimer track_set_timer(MS);
+GTimer idle_timer(MS, IDLE_TIMEOUT);
+
+
+void setup() {
+
+  Serial.begin(9600);
+  pinMode(BICYCLE_PIN, INPUT_PULLUP);
+
+  butt_1.setDebounce(50);        // настройка антидребезга (по умолчанию 80 мс)
+  butt_1.setTimeout(500);        // настройка таймаута на удержание (по умолчанию 500 мс)
+  butt_1.setClickTimeout(400);   // настройка таймаута между кликами (по умолчанию 300 мс)
+  butt_1.setType(HIGH_PULL);
+  butt_1.setDirection(NORM_OPEN);
+
+  // SSD1306_SWITCHCAPVCC = generate display voltage from 3.3V internally
+  if (!display.begin(SSD1306_SWITCHCAPVCC, 0x3C)) { // Address 0x3C for 128x32
+    Serial.println(F("SSD1306 allocation failed"));
+    for (;;); // Don't proceed, loop forever
+  }
+
+  // Show initial display buffer contents on the screen --
+  // the library initializes this with an Adafruit splash screen.
+  display.display();
+  delay(2000); // Pause for 2 seconds
+
+  // Clear the buffer
+  display.clearDisplay();
+
+  // Draw a single pixel in white
+  display.drawPixel(10, 10, SSD1306_WHITE);
+  display.display();
+
+}
+
+void loop() {
+
+  butt_1.tick();
+
+  if (butt_1.isSingle()) {
+    
+
+    if (show_info == TRACK) {
+      counter_tick_track += 350;
+      on_track = true;
+      track_set_timer.start();
+      
+    }
+    else if (show_info == ODOMETER)
+      show_info = ALL_INFO;
+    else {
+      show_info++;
+    
+    }
+    
+    draw_screen();
+  }
+  if (butt_1.isHold() && show_info == DISTANCE) {
+    if (on_track) {
+      counter_tick_track = 0;
+      on_track = false;            
+    }
+
+    stop_track();
+    
+  }
+  if (butt_1.isDouble() && show_info == DISTANCE && distance_km == 0) {
+    show_info = TRACK;
+    track_set_timer.setInterval(TIME_OUT_TRACK);
+    draw_screen();
+  }
+
+
+  processing_tick();
+
+  if (track_set_timer.isReady()) {
+    show_info = DISTANCE;
+    track_set_timer.stop();
+    draw_screen();
+  }
+  if (idle_timer.isReady()) {
+    rpm = 0;
+    speed = 0;
+    draw_screen();
+  }
+
+}
+
+void stop_track() {
+
+  // останавливает трек, обнуляя нужные переменные
+
+  put_odometer();
+  distance_km = 0;
+  counter_tick = 0;
+  last_distance = 0;
+  on_track = false;
+  draw_screen();
+    
+}
+
+float get_distance(unsigned int counter) {
+
+  //return (counter / TEN_METERS * 10 / float(METERS_KM));
+  return (counter / float(700));
+}
+
+void processing_tick() {
+
+  tick_on = !digitalRead(BICYCLE_PIN);
+
+  if (tick_on && flag_tick) {
+
+    if (last_tick_time != 0)
+      rpm = MILLIS_MIN / (millis() - last_tick_time);
+
+    last_tick_time = millis();
+    
+    distance_km = get_distance(counter_tick++);
+    speed = rpm / TEN_METERS * 10 * MIN_IN_HOUR / METER_IN_KM;
+
+    if (counter_tick_track > 0)
+      track_distance_km = get_distance(counter_tick_track--);      
+    else if (on_track && counter_tick_track == 0) 
+      stop_track();
+
+    draw_screen();
+
+    flag_tick = false;
+    idle_timer.start();
+  }
+  else if (!tick_on && flag_tick == false) {
+
+    flag_tick = true;
+
+  }
+
+}
+
+void draw_screen() {
+  if (show_info == ALL_INFO && on_track) {
+    display_info("RPM: " + String(rpm) + "\n" +
+                 "Distance KM: " + track_distance_km + "\n"
+                 "Speed km/h: " + speed + "\n" +
+                 "Odometer: " + get_odometer());
+  }
+  else if (show_info == ALL_INFO) {
+    display_info("RPM: " + String(rpm) + "\n" +
+                 "Distance KM: " + distance_km + "\n"
+                 "Speed km/h: " + speed + "\n" +
+                 "Odometer: " + get_odometer());
+
+  }
+  else if (show_info == DISTANCE && on_track) {
+    display_fullsize("Left km:", String(track_distance_km));
+  }
+  else if (show_info == DISTANCE) {
+    display_fullsize("Distance km:", String(distance_km));
+  }
+  else if (show_info == RPM) {
+    display_fullsize("RPM:", String(rpm));
+  }
+  else if (show_info == SPEED) {
+    display_fullsize("Speed km/h:", String(speed));
+  }
+  else if (show_info == ODOMETER) {
+    display_fullsize("Odometer:", String(get_odometer()));
+  }
+  else if (show_info == TRACK) {
+    display_fullsize("Set track:", String(track_distance_km = get_distance(counter_tick_track)));
+  }
+}
+
+
+void display_info(String s) {
+
+  display.clearDisplay();
+  display.setTextSize(1);             // Normal 1:1 pixel scale
+  display.setTextColor(SSD1306_WHITE);        // Draw white text
+  display.setCursor(0, 0);            // Start at top-left corner
+  display.println(s);
+  display.display();
+
+}
+
+void display_fullsize(String label, String info) {
+
+  display.clearDisplay();
+  display.setTextSize(1);
+  display.setTextColor(SSD1306_WHITE);
+  display.setCursor(0, 0);
+  display.println(label);
+  display.setCursor(0, 10);
+  display.setTextSize(3);
+  display.println(info);
+  display.display();
+
+
+}
+
+unsigned int get_last_distance() {
+  unsigned int delta_distance = 0;
+  delta_distance = distance_km - last_distance;
+  last_distance = distance_km;
+  return delta_distance;
+}
+
+void put_odometer() {
+
+  // записать дистанцию distance в eeprom равномерно
+  unsigned int distance = 0;
+
+  if ((distance = get_last_distance()) == 0)
+    return;
+
+#define BEGIN 0
+#define STEP 2 // потому что читаем в unsigned int (2 байта)
+#define MAX_ADDR 1022
+
+  unsigned int temp = 0;
+  unsigned int old_val = 0;
+  int index = -1;
+
+  for (int i = 0; i <= MAX_ADDR; i += STEP) {
+
+    // проходим по eeprom с шагом 2, потому что читаем в unsigned int (2 байта)
+    // находим наибольшее значение, оно и будет последнее записанное
+
+    EEPROM.get(i, temp);
+
+    if (temp > old_val) {
+
+      old_val = temp;
+      index = i;
+    }
+  }
+
+  if ((index + STEP) > MAX_ADDR) {
+    // если в конец писать некуда, пишем в начало
+    // пишем по адресу [адрес последнего значения + STEP]
+
+    EEPROM.put(BEGIN, distance + old_val);
+  }
+  else if (index >= 0) {
+    // пишем по адресу [адрес последнего значения + STEP]
+
+    EEPROM.put(index + STEP, distance + old_val);
+  }
+
+}
+
+
+unsigned int get_odometer() {
+
+  // возвращает последнее записанное в EEPROM число
+
+#define MAX_ADDR 1022
+#define STEP 2 // потому что читаем в unsigned int (2 байта)
+
+  unsigned int temp = 0;
+  unsigned int old_val = 0;
+
+  for (int i = 0; i <= MAX_ADDR; i += STEP) {
+
+    // проходим по eeprom с шагом 2, потому что читаем в unsigned int (2 байта)
+    // находим наибольшее значение, оно и будет последнее записанное
+
+    EEPROM.get(i, temp);
+
+    if (temp > old_val) {
+
+      old_val = temp;
+
+    }
+  }
+
+  return old_val;
+
+}
+//общий экран
+//rpm
+//speed
+//distance
+//odometer
+
+//distance, rpm, speed, odometer
