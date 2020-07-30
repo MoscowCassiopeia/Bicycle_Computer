@@ -92,31 +92,29 @@ void loop() {
   butt_1.tick();
 
   if (butt_1.isSingle()) {
-    
+
 
     if (show_info == TRACK) {
       counter_tick_track += 350;
       on_track = true;
       track_set_timer.start();
-      
+
     }
     else if (show_info == ODOMETER)
       show_info = ALL_INFO;
     else {
       show_info++;
-    
+
     }
-    
+
     draw_screen();
   }
   if (butt_1.isHold() && show_info == DISTANCE) {
-    if (on_track) {
-      counter_tick_track = 0;
-      on_track = false;            
-    }
+    if (on_track)
+      stop_track();
+    else
+      clear_distance();
 
-    stop_track();
-    
   }
   if (butt_1.isDouble() && show_info == DISTANCE && distance_km == 0) {
     show_info = TRACK;
@@ -135,6 +133,7 @@ void loop() {
   if (idle_timer.isReady()) {
     rpm = 0;
     speed = 0;
+    put_odometer();
     draw_screen();
   }
 
@@ -147,10 +146,21 @@ void stop_track() {
   put_odometer();
   distance_km = 0;
   counter_tick = 0;
+  counter_tick_track = 0;
   last_distance = 0;
   on_track = false;
   draw_screen();
-    
+
+}
+
+void clear_distance() {
+
+  // обнуляет пройденную дистанцию
+
+  put_odometer();
+  distance_km = 0;
+  counter_tick = 0;
+  
 }
 
 float get_distance(unsigned int counter) {
@@ -169,13 +179,13 @@ void processing_tick() {
       rpm = MILLIS_MIN / (millis() - last_tick_time);
 
     last_tick_time = millis();
-    
+
     distance_km = get_distance(counter_tick++);
     speed = rpm / TEN_METERS * 10 * MIN_IN_HOUR / METER_IN_KM;
 
     if (counter_tick_track > 0)
-      track_distance_km = get_distance(counter_tick_track--);      
-    else if (on_track && counter_tick_track == 0) 
+      track_distance_km = get_distance(counter_tick_track--);
+    else if (on_track && counter_tick_track == 0)
       stop_track();
 
     draw_screen();
@@ -331,10 +341,3 @@ unsigned int get_odometer() {
   return old_val;
 
 }
-//общий экран
-//rpm
-//speed
-//distance
-//odometer
-
-//distance, rpm, speed, odometer
