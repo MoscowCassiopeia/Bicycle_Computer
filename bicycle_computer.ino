@@ -23,11 +23,12 @@ Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET);
 #define RPM 2
 #define SPEED 3
 #define ODOMETER 4
-#define TRACK 5
+#define SCREEN_TRACK 5
+#define TRACK 6
+
 
 
 #define TEN_METERS 7 // оборотов колеса на 10 метров
-//#define METERS_KM 1000 // метров в километре
 #define MIN_IN_HOUR 60
 #define METER_IN_KM 1000
 #define MILLIS_MIN 60000
@@ -35,6 +36,8 @@ Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET);
 
 #define TIME_OUT_TRACK 4000 // таймаут установки дистанции трека
 #define IDLE_TIMEOUT 1500 // таймаут простоя колеса
+
+#define LENGTH_PB 128 // длина прогрессбара
 
 
 
@@ -50,6 +53,8 @@ unsigned int counter_tick = 0;
 unsigned int counter_tick_track = 0;
 unsigned long last_tick_time = 0;
 byte show_info = 0;
+byte point_bar = 0; // координата для прогрессбара
+float cost_bar = 0.0; // цена деления одного бара
 
 GButton butt_1(BTN_PIN);
 GTimer track_set_timer(MS);
@@ -91,8 +96,9 @@ void loop() {
 
   butt_1.tick();
 
-  if (butt_1.isSingle()) {
 
+// обрабатываем нажатия кнопок
+  if (butt_1.isSingle()) {
 
     if (show_info == TRACK) {
       counter_tick_track += 350;
@@ -100,12 +106,12 @@ void loop() {
       track_set_timer.start();
 
     }
-    else if (show_info == ODOMETER)
+    else if (show_info == ODOMETER && on_track)
+      show_info++;      
+    else if (show_info == SCREEN_TRACK || show_info == ODOMETER)
       show_info = ALL_INFO;
-    else {
+    else
       show_info++;
-
-    }
 
     draw_screen();
   }
@@ -125,16 +131,18 @@ void loop() {
 
   processing_tick();
 
+// опрашиваем таймеры
   if (track_set_timer.isReady()) {
     show_info = DISTANCE;
     track_set_timer.stop();
     draw_screen();
+    cost_bar = track_distance_km / LENGTH_PB;
   }
   if (idle_timer.isReady()) {
     rpm = 0;
     speed = 0;
     put_odometer();
-    draw_screen();
+    draw_screen();    
   }
 
 }
@@ -143,14 +151,9 @@ void stop_track() {
 
   // останавливает трек, обнуляя нужные переменные
 
-  clear_distance();
-  
-  //put_odometer();
-  //distance_km = 0;
-  //counter_tick = 0;
+  clear_distance();  
   counter_tick_track = 0;
-  track_distance_km = 0;
-  //last_distance = 0;
+  track_distance_km = 0;  
   on_track = false;
   
   draw_screen();
@@ -237,6 +240,10 @@ void draw_screen() {
   else if (show_info == TRACK) {
     display_fullsize("Set track:", String(track_distance_km = get_distance(counter_tick_track)));
   }
+  else if (show_info == SCREEN_TRACK) {
+    screen_track();    
+  }
+  
 }
 
 
@@ -344,4 +351,14 @@ unsigned int get_odometer() {
 
   return old_val;
 
+}
+
+void screen_track() {
+  
+  display.clearDisplay();
+  //point_bar = track_distance_km / cost_bar;
+  point_bar = distance_km / cost_bar;
+  display.fillRect(0, 0, point_bar, 32, SSD1306_WHITE);  
+  display.display();
+  
 }
