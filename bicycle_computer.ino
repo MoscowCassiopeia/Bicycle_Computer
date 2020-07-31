@@ -37,7 +37,7 @@ Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET);
 #define TIME_OUT_TRACK 4000 // таймаут установки дистанции трека
 #define IDLE_TIMEOUT 1500 // таймаут простоя колеса
 
-#define LENGTH_PB 128 // длина прогрессбара
+#define LENGTH_PB 127 // длина прогрессбара
 
 
 
@@ -53,7 +53,7 @@ unsigned int counter_tick = 0;
 unsigned int counter_tick_track = 0;
 unsigned long last_tick_time = 0;
 byte show_info = 0;
-byte point_bar = 0; // координата для прогрессбара
+int point_bar = 0; // координата для прогрессбара
 float cost_bar = 0.0; // цена деления одного бара
 
 GButton butt_1(BTN_PIN);
@@ -154,8 +154,8 @@ void stop_track() {
   clear_distance();  
   counter_tick_track = 0;
   track_distance_km = 0;  
-  on_track = false;
-  
+  //point_bar = 0;
+  on_track = false;  
   draw_screen();
 }
 
@@ -172,7 +172,7 @@ void clear_distance() {
 
 float get_distance(unsigned int counter) {
 
-  //return (counter / TEN_METERS * 10 / float(METERS_KM));
+  // возвращает дистанцию в км, высчитываемую из тиков
   return (counter / float(700));
 }
 
@@ -274,6 +274,7 @@ void display_fullsize(String label, String info) {
 }
 
 unsigned int get_last_distance() {
+  
   unsigned int delta_distance = 0;
   delta_distance = distance_km - last_distance;
   last_distance = distance_km;
@@ -356,9 +357,10 @@ unsigned int get_odometer() {
 void screen_track() {
   
   display.clearDisplay();
-  //point_bar = track_distance_km / cost_bar;
-  point_bar = distance_km / cost_bar;
-  display.fillRect(0, 0, point_bar, 32, SSD1306_WHITE);  
+  point_bar = track_distance_km / cost_bar - LENGTH_PB;  
+  display.fillRect(0, 0, abs(point_bar), 32, SSD1306_WHITE);  
+  //display.fillRect(127, 0, -20, 32, SSD1306_WHITE);  
+  display.drawFastVLine(127, 0, 32, SSD1306_WHITE);
   display.display();
   
 }
