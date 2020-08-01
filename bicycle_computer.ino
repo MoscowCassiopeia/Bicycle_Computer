@@ -27,7 +27,6 @@ Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET);
 #define TRACK 6
 
 
-
 #define TEN_METERS 7 // оборотов колеса на 10 метров
 #define MIN_IN_HOUR 60
 #define METER_IN_KM 1000
@@ -37,24 +36,25 @@ Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET);
 #define TIME_OUT_TRACK 4000 // таймаут установки дистанции трека
 #define IDLE_TIMEOUT 1500 // таймаут простоя колеса
 
-#define LENGTH_PB 127 // длина прогрессбара
+#define LENGTH_PB 64 // длина прогрессбара
 
 
 
 bool flag_tick = true;
-bool tick_on;
+//bool tick_on;
 bool on_track = false;
-unsigned int rpm = 0;
+uint16_t rpm = 0;
 float speed = 0;
 float distance_km = 0;
 float track_distance_km = 0;
-unsigned int last_distance = 0;
-unsigned int counter_tick = 0;
-unsigned int counter_tick_track = 0;
-unsigned long last_tick_time = 0;
+uint16_t last_distance = 0;
+uint16_t counter_tick = 0;
+uint16_t counter_tick_track = 0;
+uint32_t last_tick_time = 0;
 byte show_info = 0;
 int point_bar = 0; // координата для прогрессбара
 float cost_bar = 0.0; // цена деления одного бара
+
 
 GButton butt_1(BTN_PIN);
 GTimer track_set_timer(MS);
@@ -178,9 +178,9 @@ float get_distance(unsigned int counter) {
 
 void processing_tick() {
 
-  tick_on = !digitalRead(BICYCLE_PIN);
+  //tick_on = !digitalRead(BICYCLE_PIN);
 
-  if (tick_on && flag_tick) {
+  if (!digitalRead(BICYCLE_PIN) && flag_tick) {
 
     if (last_tick_time != 0)
       rpm = MILLIS_MIN / (millis() - last_tick_time);
@@ -200,7 +200,8 @@ void processing_tick() {
     flag_tick = false;
     idle_timer.start();
   }
-  else if (!tick_on && flag_tick == false) {
+  //else if (!tick_on && flag_tick == false) {
+  else if (digitalRead(BICYCLE_PIN) && flag_tick == false) {
 
     flag_tick = true;
 
@@ -260,6 +261,8 @@ void display_info(String s) {
 
 void display_fullsize(String label, String info) {
 
+  // отображает полную сводную информацию по всем счетчикам  
+
   display.clearDisplay();
   display.setTextSize(1);
   display.setTextColor(SSD1306_WHITE);
@@ -274,6 +277,8 @@ void display_fullsize(String label, String info) {
 }
 
 unsigned int get_last_distance() {
+
+  // получает дистанцию пройденную с момента последней записи в EEPROM
   
   unsigned int delta_distance = 0;
   delta_distance = distance_km - last_distance;
@@ -358,9 +363,12 @@ void screen_track() {
   
   display.clearDisplay();
   point_bar = track_distance_km / cost_bar - LENGTH_PB;  
-  display.fillRect(0, 0, abs(point_bar), 32, SSD1306_WHITE);  
-  //display.fillRect(127, 0, -20, 32, SSD1306_WHITE);  
-  display.drawFastVLine(127, 0, 32, SSD1306_WHITE);
+  
+  display.fillRect(0, 0, abs(point_bar), 32, SSD1306_WHITE);  // с лева на право
+  
+  display.fillRect(127 - abs(point_bar), 0, abs(point_bar), 32, SSD1306_WHITE);  // с права на лево
+  
+  //display.drawFastVLine(127, 0, 32, SSD1306_WHITE);
   display.display();
   
 }
