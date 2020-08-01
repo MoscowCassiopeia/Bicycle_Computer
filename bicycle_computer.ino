@@ -121,6 +121,8 @@ void loop() {
     else
       clear_distance();
 
+    draw_screen();
+
   }
   if (butt_1.isDouble() && show_info == DISTANCE && distance_km == 0) {
     show_info = TRACK;
@@ -156,8 +158,7 @@ void stop_track() {
 
   clear_distance();  
   counter_tick_track = 0;
-  track_distance_km = 0;  
-  //point_bar = 0;
+  track_distance_km = 0;    
   on_track = false;  
   draw_screen();
 }
