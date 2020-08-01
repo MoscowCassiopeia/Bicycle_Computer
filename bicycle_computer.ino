@@ -138,11 +138,14 @@ void loop() {
     draw_screen();
     cost_bar = track_distance_km / LENGTH_PB;
   }
-  if (idle_timer.isReady()) {
-    rpm = 0;
-    speed = 0;
-    put_odometer();
-    draw_screen();    
+  if (idle_timer.isReady()) {  
+    
+      rpm = 0;
+      speed = 0;
+      put_odometer();
+      draw_screen();
+      idle_timer.stop();
+   
   }
 
 }
@@ -356,7 +359,6 @@ unsigned int get_odometer() {
   }
 
   return old_val;
-
 }
 
 void screen_track() {
@@ -367,6 +369,7 @@ void screen_track() {
   display.fillRect(0, 0, abs(point_bar), 32, SSD1306_WHITE);  // с лева на право
   
   display.fillRect(127 - abs(point_bar), 0, abs(point_bar), 32, SSD1306_WHITE);  // с права на лево
+  Serial.println("track_distance_km: " + String(track_distance_km));
   
   //display.drawFastVLine(127, 0, 32, SSD1306_WHITE);
   display.display();
