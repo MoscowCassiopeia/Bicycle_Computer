@@ -17,6 +17,7 @@ Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET);
 
 #define BICYCLE_PIN 8
 #define BTN_PIN 5
+#define SPK_PIN 6
 
 #define ALL_INFO 0
 #define DISTANCE 1
@@ -32,16 +33,39 @@ Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET);
 #define METER_IN_KM 1000
 #define MILLIS_MIN 60000
 #define TICKS_IN_KM 700 // количество оборотов колеса в километре
+#define SNOWFLAKES_TIME 6000 // продолжительность снежинок
 
 #define TIME_OUT_TRACK 4000 // таймаут установки дистанции трека
 #define IDLE_TIMEOUT 1500 // таймаут простоя колеса
 
 #define LENGTH_PB 64 // длина прогрессбара
 
+//#define LOGO_HEIGHT   16
+//#define LOGO_WIDTH    16
+//#define NUMFLAKES     10 // Number of snowflakes in the animation example
+//#define XPOS   0 // Indexes into the 'icons' array in function below
+//#define YPOS   1
+//#define DELTAY 2
 
+//static const unsigned char PROGMEM logo_bmp[] =
+//{ B00000000, B11000000,
+//  B00000001, B11000000,
+//  B00000001, B11000000,
+//  B00000011, B11100000,
+//  B11110011, B11100000,
+//  B11111110, B11111000,
+//  B01111110, B11111111,
+//  B00110011, B10011111,
+//  B00011111, B11111100,
+//  B00001101, B01110000,
+//  B00011011, B10100000,
+//  B00111111, B11100000,
+//  B00111111, B11110000,
+//  B01111100, B11110000,
+//  B01110000, B01110000,
+//  B00000000, B00110000 };
 
 bool flag_tick = true;
-//bool tick_on;
 bool on_track = false;
 uint16_t rpm = 0;
 float speed = 0;
@@ -59,6 +83,7 @@ float cost_bar = 0.0; // цена деления одного бара
 GButton butt_1(BTN_PIN);
 GTimer track_set_timer(MS);
 GTimer idle_timer(MS, IDLE_TIMEOUT);
+GTimer snowflakes_timer(MS);
 
 
 void setup() {
@@ -89,6 +114,7 @@ void setup() {
   // Draw a single pixel in white
   display.drawPixel(10, 10, SSD1306_WHITE);
   display.display();
+  
 
 }
 
@@ -161,6 +187,7 @@ void stop_track() {
   track_distance_km = 0;    
   on_track = false;  
   draw_screen();
+  tone(SPK_PIN, 900, 5000);
 }
 
 void clear_distance() {
@@ -245,8 +272,12 @@ void draw_screen() {
   else if (show_info == TRACK) {
     display_fullsize("Set track:", String(track_distance_km = get_distance(counter_tick_track)));
   }
+  //else if (show_info == SCREEN_TRACK && abs(point_bar) == 63) {
+  //  testanimate(logo_bmp, LOGO_WIDTH, LOGO_HEIGHT);
+    
+  //}
   else if (show_info == SCREEN_TRACK) {
-    screen_track();    
+    screen_track();
   }
   
 }
@@ -370,9 +401,11 @@ void screen_track() {
   display.fillRect(0, 0, abs(point_bar), 32, SSD1306_WHITE);  // с лева на право
   
   display.fillRect(127 - abs(point_bar), 0, abs(point_bar), 32, SSD1306_WHITE);  // с права на лево
-  Serial.println("track_distance_km: " + String(track_distance_km));
+  Serial.println("track_distance_km: " + String(track_distance_km));  
+  Serial.println("LEFT: " + String(abs(point_bar)));  
   
-  //display.drawFastVLine(127, 0, 32, SSD1306_WHITE);
+  Serial.println("RIGHT: coord: " + String((127 - abs(point_bar))) + "   w: " + String(abs(point_bar)));
+  
   display.display();
   
 }
