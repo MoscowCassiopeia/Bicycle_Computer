@@ -1,3 +1,18 @@
+void stop_track(String mode="finish") {
+//void stop_track() {
+
+  // останавливает трек, обнуляя нужные переменные
+
+  clear_distance();  
+  counter_tick_track = 0;
+  track_distance_km = 0;    
+  on_track = false;  
+  draw_screen();
+  if (mode == "finish")
+    play_tone();
+  
+}
+
 void play_tone() {
   // играет мелодию
   tone(SPK_PIN, 900, 5000);
@@ -81,20 +96,7 @@ void processing_tick() {
 }
 
 
-void stop_track(String mode="finish") {
-//void stop_track() {
 
-  // останавливает трек, обнуляя нужные переменные
-
-  clear_distance();  
-  counter_tick_track = 0;
-  track_distance_km = 0;    
-  on_track = false;  
-  draw_screen();
-  if (mode == "finish")
-    play_tone();
-  
-}
 
 
 

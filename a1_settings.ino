@@ -61,6 +61,3 @@ uint32_t last_tick_time = 0;
 byte show_info = 0;
 int point_bar = 0; // координата для прогрессбара
 float cost_bar = 0.0; // цена деления одного бара
-
-
-void stop_track(String mode="finish"); 
