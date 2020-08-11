@@ -1,6 +1,4 @@
 void stop_track(String mode="finish") {
-//void stop_track() {
-
   // останавливает трек, обнуляя нужные переменные
 
   clear_distance();  
@@ -8,9 +6,8 @@ void stop_track(String mode="finish") {
   track_distance_km = 0;    
   on_track = false;  
   draw_screen();
-  if (mode == "finish")
-    play_tone();
-  
+  if (mode == "finish") // если остановка произошла в случае конца трека а не сброса кнопкой, то играем типа мелодию
+    play_tone();  
 }
 
 void play_tone() {
@@ -41,7 +38,7 @@ unsigned int get_odometer() {
 
   // возвращает последнее записанное в EEPROM число
 
-#define MAX_ADDR 1022
+#define MAX_ADDR 1024 - 2 // максимальный адрес в EEPROM, вместо 1024 подставить размер вашего EEPROM в байтах
 #define STEP 2 // потому что читаем в unsigned int (2 байта)
 
   unsigned int temp = 0;
