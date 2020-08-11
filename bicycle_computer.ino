@@ -33,37 +33,13 @@ Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET);
 #define METER_IN_KM 1000
 #define MILLIS_MIN 60000
 #define TICKS_IN_KM 700 // количество оборотов колеса в километре
-#define SNOWFLAKES_TIME 6000 // продолжительность снежинок
+
 
 #define TIME_OUT_TRACK 4000 // таймаут установки дистанции трека
 #define IDLE_TIMEOUT 1500 // таймаут простоя колеса
 
 #define LENGTH_PB 64 // длина прогрессбара
 
-//#define LOGO_HEIGHT   16
-//#define LOGO_WIDTH    16
-//#define NUMFLAKES     10 // Number of snowflakes in the animation example
-//#define XPOS   0 // Indexes into the 'icons' array in function below
-//#define YPOS   1
-//#define DELTAY 2
-
-//static const unsigned char PROGMEM logo_bmp[] =
-//{ B00000000, B11000000,
-//  B00000001, B11000000,
-//  B00000001, B11000000,
-//  B00000011, B11100000,
-//  B11110011, B11100000,
-//  B11111110, B11111000,
-//  B01111110, B11111111,
-//  B00110011, B10011111,
-//  B00011111, B11111100,
-//  B00001101, B01110000,
-//  B00011011, B10100000,
-//  B00111111, B11100000,
-//  B00111111, B11110000,
-//  B01111100, B11110000,
-//  B01110000, B01110000,
-//  B00000000, B00110000 };
 
 bool flag_tick = true;
 bool on_track = false;
@@ -85,6 +61,7 @@ GTimer track_set_timer(MS);
 GTimer idle_timer(MS, IDLE_TIMEOUT);
 GTimer snowflakes_timer(MS);
 
+void stop_track(String mode="finish"); 
 
 void setup() {
 
@@ -143,7 +120,8 @@ void loop() {
   }
   if (butt_1.isHold() && show_info == DISTANCE) {
     if (on_track)
-      stop_track();
+      stop_track("reset");
+      //stop_track();
     else
       clear_distance();
 
@@ -178,7 +156,8 @@ void loop() {
 
 }
 
-void stop_track() {
+void stop_track(String mode="finish") {
+//void stop_track() {
 
   // останавливает трек, обнуляя нужные переменные
 
@@ -187,7 +166,9 @@ void stop_track() {
   track_distance_km = 0;    
   on_track = false;  
   draw_screen();
-  tone(SPK_PIN, 900, 5000);
+  if (mode == "finish")
+    play_tone();
+  
 }
 
 void clear_distance() {
@@ -334,24 +315,30 @@ void put_odometer() {
 #define MAX_ADDR 1022
 
   unsigned int temp = 0;
-  unsigned int old_val = 0;
+  unsigned int old_val = 0; 
   int index = -1;
 
   for (int i = 0; i <= MAX_ADDR; i += STEP) {
+    
 
     // проходим по eeprom с шагом 2, потому что читаем в unsigned int (2 байта)
     // находим наибольшее значение, оно и будет последнее записанное
 
     EEPROM.get(i, temp);
+    
 
     if (temp > old_val) {
-
+      // если все значения в EEPROM нулевые то переменной index не присвоится значение, присвоим их в блоке else if
       old_val = temp;
-      index = i;
+      index = i;      
+    }
+    else if (i == MAX_ADDR && old_val == 0) { 
+      // если все значения в EEPROM нулевые то переменной index не присвоится значение, присвоим его здесь
+      index = i;      
     }
   }
 
-  if ((index + STEP) > MAX_ADDR) {
+  if (index >= 0 && (index + STEP) > MAX_ADDR) {
     // если в конец писать некуда, пишем в начало
     // пишем по адресу [адрес последнего значения + STEP]
 
@@ -408,4 +395,8 @@ void screen_track() {
   
   display.display();
   
+}
+
+void play_tone() {
+  tone(SPK_PIN, 900, 5000);
 }
