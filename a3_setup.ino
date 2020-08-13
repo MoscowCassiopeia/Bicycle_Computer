@@ -8,6 +8,7 @@ void setup() {
   butt_1.setClickTimeout(400);   // настройка таймаута между кликами (по умолчанию 300 мс)
   butt_1.setType(HIGH_PULL);
   butt_1.setDirection(NORM_OPEN);
+  vector_bars.setStorage(bars);
 
   // SSD1306_SWITCHCAPVCC = generate display voltage from 3.3V internally
   if (!display.begin(SSD1306_SWITCHCAPVCC, 0x3C)) { // Address 0x3C for 128x32
@@ -24,8 +25,17 @@ void setup() {
   display.clearDisplay();
 
   // Draw a single pixel in white
-  display.drawPixel(10, 10, SSD1306_WHITE);
-  display.display();
-
+  //display.drawPixel(10, 10, SSD1306_WHITE);
+  //display.display();
+  Serial.println("Possible command:");
+  Serial.println("\terase - Clear EEPROM");  
+  Serial.println("Send me command");
+  delay(4000);
+  if (Serial.available() > 0) {    
+    String incomingByte = Serial.readString();
+    if (incomingByte == "erase") {
+      erase_eeprom();
+    }    
+  }
 
 }

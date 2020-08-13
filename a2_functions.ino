@@ -1,3 +1,19 @@
+
+void bars_rpm() {
+  if (bars_proc_timer.isReady()) {
+    //Serial.println("vector_bars.full(): " + String(vector_bars.full()));
+    if (!vector_bars.full()) {
+      vector_bars.push_back(map(rpm, 0, 500, 0, SCREEN_HEIGHT - 1));
+      
+    }
+    else {
+      vector_bars.remove(0);
+      vector_bars.push_back(map(rpm, 0, 500, 0, SCREEN_HEIGHT - 1));
+    }
+    //Serial.println("vector_bars.size(): " + String(vector_bars.size()));  
+  }  
+}
+
 void stop_track(String mode = "finish") {
   // останавливает трек, обнуляя нужные переменные
 
@@ -29,6 +45,16 @@ void play_tone() {
       
 }
 
+void screen_bars() {
+  display.clearDisplay();
+  
+  for (uint8_t i = 0; i < vector_bars.size(); i++) {
+    display.drawFastVLine(i, 31-vector_bars[i], vector_bars[i], SSD1306_WHITE);
+  }
+  
+  display.display();
+  
+}
 void screen_track() {
 
   // отображает оставшуюся дистанцию трека графически
@@ -39,10 +65,6 @@ void screen_track() {
   display.fillRect(0, 0, abs(point_bar), 32, SSD1306_WHITE);  // с лева на право
 
   display.fillRect(127 - abs(point_bar), 0, abs(point_bar), 32, SSD1306_WHITE);  // с права на лево
-  //  Serial.println("track_distance_km: " + String(track_distance_km));
-  //  Serial.println("LEFT: " + String(abs(point_bar)));
-  //  Serial.println("RIGHT: coord: " + String((127 - abs(point_bar))) + "   w: " + String(abs(point_bar)));
-
   display.display();
 }
 
@@ -104,7 +126,6 @@ void processing_tick() {
 
 }
 
-
 void clear_distance() {
 
   // обнуляет пройденную дистанцию
@@ -116,13 +137,17 @@ void clear_distance() {
 
 }
 
-float get_distance(unsigned int counter) {
+float get_distance(uint32_t counter) {
 
-  // возвращает дистанцию в км, высчитываемую из тиков
-  return (counter / float(700));
+  // возвращает дистанцию в км, высчитываемую из тиков  
+  return (counter / float(TEN_METERS * 100));
 }
 
-
+void erase_eeprom() {
+  for (int i = 0; i < EEPROM_SIZE; i++) {
+    EEPROM.put(i, 0);
+  }
+}
 void put_odometer() {
 
   // записать дистанцию distance в eeprom равномерно
@@ -183,6 +208,7 @@ unsigned int get_last_distance() {
   return delta_distance;
 }
 
+
 void display_info(String s) {
 
   display.clearDisplay();
@@ -238,15 +264,14 @@ void draw_screen() {
   else if (show_info == ODOMETER) {
     display_fullsize("Odometer:", String(get_odometer()));
   }
-  else if (show_info == TRACK) {
-    display_fullsize("Set track:", String(track_distance_km = get_distance(counter_tick_track)));
-  }
-  //else if (show_info == SCREEN_TRACK && abs(point_bar) == 63) {
-  //  testanimate(logo_bmp, LOGO_WIDTH, LOGO_HEIGHT);
-
-  //}
+  else if (show_info == SET_TRACK) {
+    display_fullsize("Set track:", String(track_distance_km = get_distance(counter_tick_track)));    
+  }  
   else if (show_info == SCREEN_TRACK) {
     screen_track();
+  }
+  else if (show_info == BARS_TRACK_RPM) {
+    screen_bars();
   }
 
 }
