@@ -4,4 +4,5 @@ void loop() {
   process_buttons();
   processing_tick();
   process_timers();
+  play_tone();
 }

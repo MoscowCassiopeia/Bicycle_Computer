@@ -26,6 +26,6 @@ void setup() {
   // Draw a single pixel in white
   display.drawPixel(10, 10, SSD1306_WHITE);
   display.display();
-  
+
 
 }

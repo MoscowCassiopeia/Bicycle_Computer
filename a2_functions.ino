@@ -1,44 +1,56 @@
-void stop_track(String mode="finish") {
+void stop_track(String mode = "finish") {
   // останавливает трек, обнуляя нужные переменные
 
-  clear_distance();  
+  clear_distance();
   counter_tick_track = 0;
-  track_distance_km = 0;    
-  on_track = false;  
+  track_distance_km = 0;
+  on_track = false;
   draw_screen();
-  if (mode == "finish") // если остановка произошла в случае конца трека а не сброса кнопкой, то играем типа мелодию
-    play_tone();  
+  if (mode == "finish") {  // если остановка произошла в случае конца трека а не сброса кнопкой, то играем типа мелодию
+    play_melody = true;
+    melody_timer.setInterval(NOTE_DURATION);
+  }
+    
+    //play_tone();
 }
 
 void play_tone() {
-  // играет мелодию
-  tone(SPK_PIN, 900, 5000);
+  // играет мелодию  
+    
+    if (melody_timer.isReady() && play_melody && counter_note != NOTE_COUNT) {      
+      tone(SPK_PIN, note += NOTE_NEXT, NOTE_DURATION);
+      counter_note++;
+    }
+    else if (counter_note == NOTE_COUNT) {
+      counter_note = 0;
+      play_melody = false;
+      note = NOTE_BEGIN;
+    }
+      
 }
 
 void screen_track() {
 
   // отображает оставшуюся дистанцию трека графически
-  
+
   display.clearDisplay();
-  point_bar = track_distance_km / cost_bar - LENGTH_PB;  
-  
+  point_bar = track_distance_km / cost_bar - LENGTH_PB;
+
   display.fillRect(0, 0, abs(point_bar), 32, SSD1306_WHITE);  // с лева на право
-  
+
   display.fillRect(127 - abs(point_bar), 0, abs(point_bar), 32, SSD1306_WHITE);  // с права на лево
-  Serial.println("track_distance_km: " + String(track_distance_km));  
-  Serial.println("LEFT: " + String(abs(point_bar)));  
-  
-  Serial.println("RIGHT: coord: " + String((127 - abs(point_bar))) + "   w: " + String(abs(point_bar)));
-  
+  //  Serial.println("track_distance_km: " + String(track_distance_km));
+  //  Serial.println("LEFT: " + String(abs(point_bar)));
+  //  Serial.println("RIGHT: coord: " + String((127 - abs(point_bar))) + "   w: " + String(abs(point_bar)));
+
   display.display();
-  
 }
 
 unsigned int get_odometer() {
 
   // возвращает последнее записанное в EEPROM число
 
-#define MAX_ADDR 1024 - 2 // максимальный адрес в EEPROM, вместо 1024 подставить размер вашего EEPROM в байтах
+#define MAX_ADDR 1024 - 2 // размер вашего EEPROM, вместо 1024 подставить размер вашего EEPROM в байтах
 #define STEP 2 // потому что читаем в unsigned int (2 байта)
 
   unsigned int temp = 0;
@@ -62,7 +74,7 @@ unsigned int get_odometer() {
 }
 
 void processing_tick() {
-  
+
   if (!digitalRead(BICYCLE_PIN) && flag_tick) {
 
     if (last_tick_time != 0)
@@ -70,8 +82,8 @@ void processing_tick() {
 
     last_tick_time = millis();
 
-    distance_km = get_distance(counter_tick++);
-    speed = rpm / TEN_METERS * 10 * MIN_IN_HOUR / METER_IN_KM;
+    distance_km = get_distance(counter_tick++); //Serial.println("tik: " + String(counter_tick));
+    speed = float(rpm) / TEN_METERS * 10 * MIN_IN_HOUR / METER_IN_KM;
 
     if (counter_tick_track > 0)
       track_distance_km = get_distance(counter_tick_track--);
@@ -93,10 +105,6 @@ void processing_tick() {
 }
 
 
-
-
-
-
 void clear_distance() {
 
   // обнуляет пройденную дистанцию
@@ -105,7 +113,7 @@ void clear_distance() {
   distance_km = 0;
   counter_tick = 0;
   last_distance = 0;
-  
+
 }
 
 float get_distance(unsigned int counter) {
@@ -128,26 +136,26 @@ void put_odometer() {
 #define MAX_ADDR 1022
 
   unsigned int temp = 0;
-  unsigned int old_val = 0; 
+  unsigned int old_val = 0;
   int index = -1;
 
   for (int i = 0; i <= MAX_ADDR; i += STEP) {
-    
+
 
     // проходим по eeprom с шагом 2, потому что читаем в unsigned int (2 байта)
     // находим наибольшее значение, оно и будет последнее записанное
 
     EEPROM.get(i, temp);
-    
+
 
     if (temp > old_val) {
       // если все значения в EEPROM нулевые то переменной index не присвоится значение, присвоим их в блоке else if
       old_val = temp;
-      index = i;      
+      index = i;
     }
-    else if (i == MAX_ADDR && old_val == 0) { 
+    else if (i == MAX_ADDR && old_val == 0) {
       // если все значения в EEPROM нулевые то переменной index не присвоится значение, присвоим его здесь
-      index = i;      
+      index = i;
     }
   }
 
@@ -168,7 +176,7 @@ void put_odometer() {
 unsigned int get_last_distance() {
 
   // получает дистанцию пройденную с момента последней записи в EEPROM
-  
+
   unsigned int delta_distance = 0;
   delta_distance = distance_km - last_distance;
   last_distance = distance_km;
@@ -188,7 +196,7 @@ void display_info(String s) {
 
 void display_fullsize(String label, String info) {
 
-  // отображает полную сводную информацию по всем счетчикам  
+  // отображает полную сводную информацию по всем счетчикам
 
   display.clearDisplay();
   display.setTextSize(1);
@@ -235,10 +243,10 @@ void draw_screen() {
   }
   //else if (show_info == SCREEN_TRACK && abs(point_bar) == 63) {
   //  testanimate(logo_bmp, LOGO_WIDTH, LOGO_HEIGHT);
-    
+
   //}
   else if (show_info == SCREEN_TRACK) {
     screen_track();
   }
-  
+
 }
