@@ -1,17 +1,36 @@
 
 void bars_rpm() {
-  if (bars_proc_timer.isReady()) {
-    //Serial.println("vector_bars.full(): " + String(vector_bars.full()));
-    if (!vector_bars.full()) {
-      vector_bars.push_back(map(rpm, 0, 500, 0, SCREEN_HEIGHT - 1));
-      
+#define MAX_RPM 400
+#define MIN_RPM 0
+  uint16_t avrg = 0;
+  
+//  Serial.println("buff_bars[0]: " + String(buff_bars[0]));
+//  Serial.println("buff_bars[1]: " + String(buff_bars[1]));
+//  Serial.println("buff_bars[2]: " + String(buff_bars[2]));
+  
+  if (buff_bars[COUNT_AVRG_BARS - 1] != -1) {
+    for (int i = 0; i < COUNT_AVRG_BARS; i++) {
+      avrg += buff_bars[i];
+      buff_bars[i] = -1;
     }
+    if (!vector_bars_avrg.full())
+      vector_bars_avrg.push_back(avrg / COUNT_AVRG_BARS);
     else {
-      vector_bars.remove(0);
-      vector_bars.push_back(map(rpm, 0, 500, 0, SCREEN_HEIGHT - 1));
+      vector_bars_avrg.remove(0);
+      vector_bars_avrg.push_back(avrg / COUNT_AVRG_BARS);
     }
-    //Serial.println("vector_bars.size(): " + String(vector_bars.size()));  
-  }  
+    //Serial.println("Average: " + String(avrg / COUNT_AVRG_BARS));
+  }
+
+
+  for (int i = 0; i < COUNT_AVRG_BARS; i++) {
+    if (buff_bars[i] == -1) {
+      buff_bars[i] = map(rpm, MIN_RPM, MAX_RPM, 0, SCREEN_HEIGHT - 1);
+      //Serial.println("map(rpm, MIN_RPM, MAX_RPM, 0, SCREEN_HEIGHT - 1); " + String(map(rpm, MIN_RPM, MAX_RPM, 0, SCREEN_HEIGHT - 1)));
+      break;
+    }
+  }
+
 }
 
 void stop_track(String mode = "finish") {
@@ -26,35 +45,35 @@ void stop_track(String mode = "finish") {
     play_melody = true;
     melody_timer.setInterval(NOTE_DURATION);
   }
-    
-    //play_tone();
+
+  //play_tone();
 }
 
 void play_tone() {
-  // играет мелодию  
-    
-    if (melody_timer.isReady() && play_melody && counter_note != NOTE_COUNT) {      
-      tone(SPK_PIN, note += NOTE_NEXT, NOTE_DURATION);
-      counter_note++;
-    }
-    else if (counter_note == NOTE_COUNT) {
-      counter_note = 0;
-      play_melody = false;
-      note = NOTE_BEGIN;
-    }
-      
+  // играет мелодию
+
+  if (melody_timer.isReady() && play_melody && counter_note != NOTE_COUNT) {
+    tone(SPK_PIN, note += NOTE_NEXT, NOTE_DURATION);
+    counter_note++;
+  }
+  else if (counter_note == NOTE_COUNT) {
+    counter_note = 0;
+    play_melody = false;
+    note = NOTE_BEGIN;
+  }
+
 }
 
 void screen_bars() {
+
   display.clearDisplay();
-  
-  for (uint8_t i = 0; i < vector_bars.size(); i++) {
-    display.drawFastVLine(i, 31-vector_bars[i], vector_bars[i], SSD1306_WHITE);
-  }
-  
+  for (uint8_t i = 0; i < vector_bars_avrg.size(); i++)
+    display.drawFastVLine(i, 31 - vector_bars_avrg[i], vector_bars_avrg[i], SSD1306_WHITE);
   display.display();
-  
+
 }
+
+
 void screen_track() {
 
   // отображает оставшуюся дистанцию трека графически
@@ -101,6 +120,7 @@ void processing_tick() {
 
     if (last_tick_time != 0)
       rpm = MILLIS_MIN / (millis() - last_tick_time);
+    bars_rpm();
 
     last_tick_time = millis();
 
@@ -139,7 +159,7 @@ void clear_distance() {
 
 float get_distance(uint32_t counter) {
 
-  // возвращает дистанцию в км, высчитываемую из тиков  
+  // возвращает дистанцию в км, высчитываемую из тиков
   return (counter / float(TEN_METERS * 100));
 }
 
@@ -265,8 +285,8 @@ void draw_screen() {
     display_fullsize("Odometer:", String(get_odometer()));
   }
   else if (show_info == SET_TRACK) {
-    display_fullsize("Set track:", String(track_distance_km = get_distance(counter_tick_track)));    
-  }  
+    display_fullsize("Set track:", String(track_distance_km = get_distance(counter_tick_track)));
+  }
   else if (show_info == SCREEN_TRACK) {
     screen_track();
   }

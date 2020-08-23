@@ -7,13 +7,18 @@ void process_buttons() {
       on_track = true;
       track_set_timer.start();
     }
-    else if (show_info == ODOMETER && on_track)
-      show_info++;
-    //else if (show_info == SCREEN_TRACK || show_info == ODOMETER)
-    else if (show_info == BARS_TRACK_RPM || show_info == ODOMETER)
-      show_info = ALL_INFO;
-    else
-      show_info++;
+    else if (on_track) {
+      if (show_info == SCREEN_TRACK)
+        show_info = ALL_INFO;
+      else
+        show_info++;
+    }
+    else {
+      if (show_info >= BARS_TRACK_RPM)
+        show_info = ALL_INFO;
+      else
+        show_info++;
+    }
 
     draw_screen();
   }
@@ -21,9 +26,9 @@ void process_buttons() {
     if (on_track && show_info == DISTANCE)
       stop_track("reset");
     else if (show_info == SET_TRACK) {
-      
+
       if (hold_btn_track_timer.isReady()) {
-        
+
         counter_tick_track += TICKS_IN_KM / 2;
         on_track = true;
         track_set_timer.start();
@@ -32,7 +37,7 @@ void process_buttons() {
     }
     else
       clear_distance();
-      
+
     draw_screen();
 
   }

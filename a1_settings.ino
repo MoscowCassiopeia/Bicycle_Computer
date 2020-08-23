@@ -14,14 +14,16 @@
 #define BTN_PIN 5
 #define SPK_PIN 6
 
+// ---------- коды экранов -----------
 #define ALL_INFO 0
 #define DISTANCE 1
 #define RPM 2
 #define SPEED 3
 #define ODOMETER 4
-#define SCREEN_TRACK 5 // прогрессбар трека
-#define BARS_TRACK_RPM 6 // график rpm
+#define BARS_TRACK_RPM 5 // график rpm
+#define SCREEN_TRACK 6 // прогрессбар трека
 #define SET_TRACK 7  // меню установки трека
+// -----------------------------------
 
 #define NOTE_DURATION 500 // пауза между нотами
 #define NOTE_BEGIN 100 // нота с которой начинаем играть
@@ -47,7 +49,7 @@
 #define TIME_PROC_BAR 1000 // раз в период расчитываем бар
 
 #define LENGTH_PB 64 // длина прогрессбара
-
+#define COUNT_AVRG_BARS 10 // количество баров из которых считаем среднюю
 
 
 GButton butt_1(BTN_PIN);
@@ -67,7 +69,6 @@ bool play_melody = false; // флаг начать проигрывать мел
 bool flag_tick = true;
 bool on_track = false;
 uint16_t rpm = 0;
-//uint16_t last_rpm = 0; // для высчитывания средней rpm за период TIME_PROC_BAR
 float speed = 0;
 float distance_km = 0;
 float track_distance_km = 0;
@@ -81,5 +82,6 @@ byte counter_note = 0; // счетчик для проигранных нот
 int point_bar = 0; // координата для прогрессбара
 float cost_bar = 0.0; // цена деления одного бара
 
-byte bars[SCREEN_WIDTH];
-Vector<byte> vector_bars; // вектор с барами для отрисовки
+int buff_bars[COUNT_AVRG_BARS]; // буфер для промежуточных значений
+byte bars_avrg[SCREEN_WIDTH]; // тут будем хранить средние значения
+Vector<byte> vector_bars_avrg; // вектор с средними значениями баров для отрисовки

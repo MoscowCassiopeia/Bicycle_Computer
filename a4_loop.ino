@@ -5,5 +5,5 @@ void loop() {
   processing_tick();
   process_timers();
   play_tone();
-  bars_rpm();
+  //bars_rpm();
 }
