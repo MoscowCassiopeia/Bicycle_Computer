@@ -4,7 +4,7 @@ void process_timers() {
     show_info = DISTANCE;
     track_set_timer.stop();
     draw_screen();
-    cost_bar = track_distance_km / LENGTH_PB;
+    cost_bar = track_distance_km / (LENGTH_PB - INDENT / 2);
   }
   if (idle_timer.isReady()) {
 

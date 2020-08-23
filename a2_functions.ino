@@ -3,11 +3,11 @@ void bars_rpm() {
 #define MAX_RPM 400
 #define MIN_RPM 0
   uint16_t avrg = 0;
-  
-//  Serial.println("buff_bars[0]: " + String(buff_bars[0]));
-//  Serial.println("buff_bars[1]: " + String(buff_bars[1]));
-//  Serial.println("buff_bars[2]: " + String(buff_bars[2]));
-  
+
+  //  Serial.println("buff_bars[0]: " + String(buff_bars[0]));
+  //  Serial.println("buff_bars[1]: " + String(buff_bars[1]));
+  //  Serial.println("buff_bars[2]: " + String(buff_bars[2]));
+
   if (buff_bars[COUNT_AVRG_BARS - 1] != -1) {
     for (int i = 0; i < COUNT_AVRG_BARS; i++) {
       avrg += buff_bars[i];
@@ -68,20 +68,36 @@ void screen_bars() {
 
   display.clearDisplay();
   for (uint8_t i = 0; i < vector_bars_avrg.size(); i++)
-    display.drawFastVLine(i, 31 - vector_bars_avrg[i], vector_bars_avrg[i], SSD1306_WHITE);
+    display.drawFastVLine(i + 10, 31 - vector_bars_avrg[i], vector_bars_avrg[i], SSD1306_WHITE);
+
+  display.setTextSize(1);
+  display.setTextColor(SSD1306_WHITE);
+  display.setCursor(0, 0);
+  display.println("R");
+  display.println("P");
+  display.println("M");
   display.display();
 
 }
 
 
 void screen_track() {
-
+  
   // отображает оставшуюся дистанцию трека графически
 
   display.clearDisplay();
-  point_bar = track_distance_km / cost_bar - LENGTH_PB;
+  
+  display.setTextSize(1);
+  display.setTextColor(SSD1306_WHITE);
+  display.setCursor(0, 0);
+  display.println("P");
+  display.println("B");
+  display.println("A");
+  display.println("R");
+  
+  point_bar = track_distance_km / cost_bar - (LENGTH_PB - INDENT / 2);
 
-  display.fillRect(0, 0, abs(point_bar), 32, SSD1306_WHITE);  // с лева на право
+  display.fillRect(INDENT, 0, abs(point_bar), 32, SSD1306_WHITE);  // с лева на право
 
   display.fillRect(127 - abs(point_bar), 0, abs(point_bar), 32, SSD1306_WHITE);  // с права на лево
   display.display();
