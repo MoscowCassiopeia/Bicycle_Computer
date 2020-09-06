@@ -258,8 +258,7 @@ void display_info(String s) {
 
 void display_fullsize(String label, String info) {
 
-  // отображает полную сводную информацию по всем счетчикам
-
+  
   display.clearDisplay();
   display.setTextSize(1);
   display.setTextColor(SSD1306_WHITE);
